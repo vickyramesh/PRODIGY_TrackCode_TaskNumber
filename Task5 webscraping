@@ -1,0 +1,60 @@
+import requests
+from bs4 import BeautifulSoup
+import csv
+
+# URL of the e-commerce website you want to scrape
+URL = 'https://www.amazon.com/s?k=laptops'  # Example URL - replace with the desired URL
+
+# Headers to mimic a browser request (helps avoid being blocked)
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+}
+
+# Function to get the HTML content of the page
+def fetch_page(url):
+    response = requests.get(url, headers=HEADERS)
+    return response.content
+
+# Function to parse the HTML content and extract product data
+def extract_product_info(page_content):
+    soup = BeautifulSoup(page_content, 'html.parser')
+    products = []
+
+    # Loop through product listings (Modify based on the website's structure)
+    for product in soup.find_all('div', {'data-asin': True}):
+        name = product.find('span', {'class': 'a-text-normal'})
+        price = product.find('span', {'class': 'a-price-whole'})
+        rating = product.find('span', {'class': 'a-icon-alt'})
+
+        if name and price and rating:
+            products.append({
+                'name': name.get_text(),
+                'price': price.get_text(),
+                'rating': rating.get_text()
+            })
+    
+    return products
+
+# Function to save the extracted data to a CSV file
+def save_to_csv(products, filename='products.csv'):
+    with open(filename, mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=['name', 'price', 'rating'])
+        writer.writeheader()
+        for product in products:
+            writer.writerow(product)
+    print(f"Data saved to {filename}")
+
+# Main function to coordinate the scraping and saving of data
+def main():
+    print("Fetching product data...")
+    page_content = fetch_page(URL)
+    print("Extracting product information...")
+    products = extract_product_info(page_content)
+    
+    if products:
+        save_to_csv(products)
+    else:
+        print("No products found.")
+
+if __name__ == '__main__':
+    main()
